@@ -245,7 +245,7 @@ class Bot:
                 
                 self.keyboard.hold_key(VKEY["F1"], press_time=0.06)
                 sleep(rd.uniform(0.01, 0.05))
-                
+
                 if not self.__check_mob_still_alive(current_mob):
                     monsters_count += 1
                     
@@ -271,7 +271,7 @@ class Bot:
     def __mobs_not_available_on_screen(self):
         #print("No Mobs in Area, moving.")
         self.keyboard.human_turn_back()
-        self.keyboard.hold_key(VKEY["z"], press_time=4)
+        self.keyboard.hold_key(VKEY["z"], press_time=2)
         sleep(0.1)
         self.keyboard.press_key(VKEY["s"])
 

@@ -16,24 +16,24 @@ def get_window_handlers():
     return hwnd_from_title
 
 i = 0
-def get_point_near_center(center, points):
+def get_point_near_center(center, points, rank=2):
     dist_two_points = lambda center, point: ((center[0] - point[0]) ** 2 + (center[1] - point[1]) ** 2) ** (1 / 2)
     closest_dist = 999999  # Start with a big number for smaller search
-    best_point = deque(maxlen=2)
+    best_point = deque(maxlen=rank)  # Adjust maxlen to accommodate the rank
+
     for point in points:
         dist = dist_two_points(center, point)
         if dist < closest_dist:
             closest_dist = dist
             best_point.append(point)
-    # Return the second most nearest point or the nearest point if just have one point.
-    # Because the nearest mob sometimes is already dead and we don't want to select it.
-    global i
-    if i == 0:
-        i = -1
-    elif i == -1:
-        i = 0
-    return best_point[i]
 
+    # Return the nth nearest point based on rank, or the nearest if less than rank points exist.
+    if len(best_point) >= rank:
+        return best_point[0]  # Return the point at rank
+    elif len(best_point) > 0:
+        return best_point[-1]  # Return the last available point if there are fewer than rank points
+    else:
+        return best_point[0]
 
 def start_countdown(voice_engine, sleep_time_sec=5):
     if not voice_engine.isBusy():
