@@ -15,10 +15,13 @@ from utils.SyncedTimer import SyncedTimer
 import cv2 as cv
 from pathlib import Path
 
+import logging as log
+
+last_msg_sent = None
+
 @throttle()
 def emit_msg(gui_window, color, msg):
     gui_window.write_event_value(color, msg)
-
 
 class Bot:
     def __init__(self):
@@ -47,6 +50,7 @@ class Bot:
         self.convert_penya_to_perins_timer = SyncedTimer(
             self.__convert_penya_to_perins, float(self.config["convert_penya_to_perins_timer_min"]) * 60
         )
+
 
     def setup(self, window_handler, gui_window):
         self.gui_window = gui_window
@@ -152,43 +156,54 @@ class Bot:
             loop_time = time()
 
     def __farm_thread(self):
+        print('-- Entered farm thread --')
         start_countdown(self.voice_engine, 3)
         current_mob_info_index = 0
         mobs_killed = 0
 
         while True:
-            if not len(self.config["selected_mobs"]) > 0:
-                continue
-
-            self.convert_penya_to_perins_timer()
+            print('-------------------------')
 
             if current_mob_info_index > (len(self.config["selected_mobs"]) - 1):
                 current_mob_info_index = 0
+                
             current_mob = self.config["selected_mobs"][current_mob_info_index]
             matches = self.__get_mobs_position(current_mob)
 
             if matches:
+                print(f"Detected {len(matches)} '{current_mob['name']}'")
+
                 mobs_killed = self.__mobs_available_on_screen(current_mob, matches, mobs_killed)
+            
             else:
+                print(f"No '{current_mob['name']}' found --> NEXT MOB ON THE LIST")
                 # TODO: Turn around and check for mobs first before changing the current mob
                 current_mob_info_index += 1
                 if current_mob_info_index > (len(self.config["selected_mobs"]) - 1):
+                    print(f"Checked all mobs --> MOVING")
                     self.__mobs_not_available_on_screen()
                 else:
                     pass
                     # print("Current mob no found, checking another one.")
 
+            global last_msg_sent
+            
+            message = f"Mobs killed: {mobs_killed}/{int(self.config['mobs_kill_goal'])}"
+
+            if message != last_msg_sent:
+                emit_msg(
+                    _throttle_sec=0,
+                    gui_window=self.gui_window,
+                    color="msg_green",
+                    msg=message
+                    if self.config["mobs_kill_goal"]
+                    else f"Mobs killed: {mobs_killed}",
+                )
+
+            last_msg_sent = message
+
             if (self.config["mobs_kill_goal"] is not None) and (mobs_killed >= int(self.config["mobs_kill_goal"])):
                 break
-
-            emit_msg(
-                _throttle_sec=60,
-                gui_window=self.gui_window,
-                color="msg_green",
-                msg=f"Mobs killed: {mobs_killed}/{int(self.config['mobs_kill_goal'])}"
-                if self.config["mobs_kill_goal"]
-                else f"Mobs killed: {mobs_killed}",
-            )
 
             if not self.__farm_thread_running:
                 break
@@ -200,28 +215,60 @@ class Bot:
 
         monsters_count = mobs_killed
         mob_pos = get_point_near_center(frame_center, points)
-        self.mouse.move(to_point=mob_pos, duration=0.1)
+        """
+        for i in range(5):
+            mob_pos = (mob_pos[0] - i, mob_pos[1])
+            print(i)
+            self.mouse.move(to_point=mob_pos, duration=0.05)
+
+            sleep(1)
+
+        sleep(10)
+        """
+        self.mouse.move(to_point=mob_pos, duration=0.01)
+
+        print(f"'{current_mob['name']}' | Moved to {mob_pos} (2d nearest detected mob_name)")
+
         if self.__check_mob_existence():
+            
+            print(f"'{current_mob['name']}' | LIFE BAR DETECTED")
+
             self.mouse.left_click()
             self.keyboard.hold_key(VKEY["F1"], press_time=0.06)
+
             self.mouse.move_outside_game(duration=0.2)
             fight_time = time()
+
             while True:
+                
+                self.keyboard.hold_key(VKEY["F1"], press_time=0.06)
+
                 if not self.__check_mob_still_alive(current_mob):
                     monsters_count += 1
+                    
+                    print(f"'{current_mob['name']}' | Killed | Monsters Count: {monsters_count}") 
                     break
                 else:
                     if (time() - fight_time) >= int(self.config["fight_time_limit_sec"]):
-                        # Unselect the mob if the fight limite is over
+                        
+                        print(f"'{current_mob['name']}' | Still alive | Time limit {self.config['fight_time_limit_sec']}s reached")
+                        print("--> NEXT MOB <--")
+                        # Unselect the mob if the fight limit is over
                         self.keyboard.hold_key(VKEY["esc"], press_time=0.06)
                         break
                     sleep(float(self.config["delay_to_check_mob_still_alive_sec"]))
+
+                    print(f"'{current_mob['name']}' | Still alive | Checking again")
+
+        else:
+            print(f"'{current_mob['name']}' | NO LIFE BAR")
+            
         return monsters_count
 
     def __mobs_not_available_on_screen(self):
-        print("No Mobs in Area, moving.")
+        #print("No Mobs in Area, moving.")
         self.keyboard.human_turn_back()
-        self.keyboard.hold_key(VKEY["w"], press_time=4)
+        self.keyboard.hold_key(VKEY["z"], press_time=4)
         sleep(0.1)
         self.keyboard.press_key(VKEY["s"])
 

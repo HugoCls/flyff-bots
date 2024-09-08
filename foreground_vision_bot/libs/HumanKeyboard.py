@@ -191,15 +191,15 @@ class HumanKeyboard:
             sleep(0.01)
 
         # Stop auto run
-        if key == VKEY["w"] and stop_when_w:
+        if key == VKEY["z"] and stop_when_w:
             win32api.PostMessage(self.hwnd, win32con.WM_KEYDOWN, VKEY["s"], 0)
             sleep(0.005)
             win32api.PostMessage(self.hwnd, win32con.WM_KEYUP, VKEY["s"], 0)
             sleep(0.01)
 
     def human_turn_back(self):
-        keys = (VKEY["a"], VKEY["d"])
+        keys = (VKEY["q"], VKEY["d"])
         random_time = round(uniform(0.6, 0.8), 3)
-        self.hold_key(VKEY["w"], stop_when_w=False, press_time=0.06)
+        self.hold_key(VKEY["z"], stop_when_w=False, press_time=0.06)
         self.hold_key(keys[randint(0, len(keys) - 1)], press_time=random_time)
         self.hold_key(VKEY["s"])
