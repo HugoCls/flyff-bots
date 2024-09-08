@@ -235,7 +235,7 @@ class Bot:
 
             self.mouse.left_click()
             sleep(rd.uniform(0.01, 0.05))
-            
+
             self.keyboard.hold_key(VKEY["F1"], press_time=0.06)
 
             self.mouse.move_outside_game(duration=0.2)
@@ -244,7 +244,8 @@ class Bot:
             while True:
                 
                 self.keyboard.hold_key(VKEY["F1"], press_time=0.06)
-
+                sleep(rd.uniform(0.01, 0.05))
+                
                 if not self.__check_mob_still_alive(current_mob):
                     monsters_count += 1
                     
