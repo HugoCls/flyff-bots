@@ -14,7 +14,7 @@ from utils.SyncedTimer import SyncedTimer
 
 import cv2 as cv
 from pathlib import Path
-
+import random as rd
 import logging as log
 
 last_msg_sent = None
@@ -234,6 +234,8 @@ class Bot:
             print(f"'{current_mob['name']}' | LIFE BAR DETECTED")
 
             self.mouse.left_click()
+            sleep(rd.uniform(0.01, 0.05))
+            
             self.keyboard.hold_key(VKEY["F1"], press_time=0.06)
 
             self.mouse.move_outside_game(duration=0.2)
